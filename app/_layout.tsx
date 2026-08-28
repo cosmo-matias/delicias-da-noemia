@@ -97,7 +97,7 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="dashboard/index"
-          options={{ title: "Dashboard" }}
+          options={{ title: "Visão Geral" }}
         />
         <Stack.Screen
           name="sync/index"
