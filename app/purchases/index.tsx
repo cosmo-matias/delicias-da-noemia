@@ -54,7 +54,10 @@ export default function PurchasesListScreen() {
   );
 
   const renderPurchaseItem = ({ item }: { item: Compra }) => (
-    <Pressable className="mb-3 rounded-xl border border-secondary/20 bg-white p-4 active:opacity-80">
+    <Pressable
+      onPress={() => router.push(`/purchases/${item.id}`)}
+      className="mb-3 rounded-xl border border-secondary/20 bg-white p-4 active:opacity-80"
+    >
       <View className="flex-row items-center justify-between">
         <View>
           <Text className="text-base font-semibold text-primary">

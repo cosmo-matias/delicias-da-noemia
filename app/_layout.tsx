@@ -68,6 +68,10 @@ export default function RootLayout() {
           options={{ title: "Nova Compra" }}
         />
         <Stack.Screen
+          name="purchases/[id]"
+          options={{ title: "Detalhes da Compra" }}
+        />
+        <Stack.Screen
           name="recipes/index"
           options={{ title: "Receitas" }}
         />
