@@ -74,5 +74,30 @@ export async function initDatabase() {
       unit_price REAL NOT NULL,
       total_price REAL NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS insumos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      marca TEXT,
+      unidade_medida TEXT NOT NULL,
+      quantidade_medida REAL,
+      itens_por_pacote INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS compras (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      data TEXT NOT NULL,
+      valor_total REAL NOT NULL DEFAULT 0,
+      observacoes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS compras_itens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      compra_id INTEGER NOT NULL REFERENCES compras(id) ON DELETE CASCADE,
+      insumo_id INTEGER NOT NULL REFERENCES insumos(id) ON DELETE RESTRICT,
+      quantidade REAL NOT NULL,
+      preco_unitario REAL NOT NULL,
+      preco_total REAL NOT NULL
+    );
   `);
 }

@@ -213,3 +213,53 @@ export type NewSale = typeof sales.$inferInsert;
 
 export type SaleItem = typeof saleItems.$inferSelect;
 export type NewSaleItem = typeof saleItems.$inferInsert;
+
+// ─── Refatoração/Melhorias: Módulo de Compras (Português) ────────────
+
+export const insumos = sqliteTable("insumos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  nome: text("nome").notNull(),
+  marca: text("marca"),
+  unidadeMedida: text("unidade_medida").notNull(),
+  quantidadeMedida: real("quantidade_medida"),
+  itensPorPacote: integer("itens_por_pacote"),
+});
+
+export const compras = sqliteTable("compras", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  data: text("data").notNull(),
+  valorTotal: real("valor_total").notNull().default(0),
+  observacoes: text("observacoes"),
+});
+
+export const comprasItens = sqliteTable("compras_itens", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  compraId: integer("compra_id").notNull().references(() => compras.id, { onDelete: "cascade" }),
+  insumoId: integer("insumo_id").notNull().references(() => insumos.id, { onDelete: "restrict" }),
+  quantidade: real("quantidade").notNull(),
+  precoUnitario: real("preco_unitario").notNull(),
+  precoTotal: real("preco_total").notNull(),
+});
+
+export const insumosRelations = relations(insumos, ({ many }) => ({
+  comprasItens: many(comprasItens),
+}));
+
+export const comprasRelations = relations(compras, ({ many }) => ({
+  itens: many(comprasItens),
+}));
+
+export const comprasItensRelations = relations(comprasItens, ({ one }) => ({
+  compra: one(compras, {
+    fields: [comprasItens.compraId],
+    references: [compras.id],
+  }),
+  insumo: one(insumos, {
+    fields: [comprasItens.insumoId],
+    references: [insumos.id],
+  }),
+}));
+
+export type Insumo = typeof insumos.$inferSelect;
+export type Compra = typeof compras.$inferSelect;
+export type CompraItem = typeof comprasItens.$inferSelect;
