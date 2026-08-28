@@ -8,7 +8,7 @@ import {
   Alert,
   FlatList,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import { ComprasRepository } from "../../db/repositories/compras";
 import type { Insumo } from "../../db/schema";
 import ModalInsumo from "../../components/ModalInsumo";
@@ -24,6 +24,9 @@ type CartItem = {
 
 export default function NovaCompraScreen() {
   const router = useRouter();
+  const { editId } = useLocalSearchParams();
+  const isEditing = !!editId;
+  const purchaseId = Number(editId);
   
   // Estados para Busca
   const [busca, setBusca] = useState("");
@@ -38,9 +41,40 @@ export default function NovaCompraScreen() {
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
   const [observacoes, setObservacoes] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [dataOriginal, setDataOriginal] = useState<string | null>(null);
 
   // Estado do Modal de Cadastro Rápido de Insumo
   const [modalInsumoVisivel, setModalInsumoVisivel] = useState(false);
+
+  // Efeito para carregar dados se estiver editando
+  useEffect(() => {
+    if (isEditing && purchaseId) {
+      const carregarCompra = async () => {
+        try {
+          const compra = await ComprasRepository.obterCompraPorId(purchaseId);
+          if (compra) {
+            setObservacoes(compra.observacoes || "");
+            setDataOriginal(compra.data);
+            
+            const itensFormatados: CartItem[] = compra.itens.map((item: any) => ({
+              insumoId: item.insumoId,
+              nome: item.insumoNome,
+              marca: item.insumoMarca || "",
+              unidadeMedida: item.unidadeMedida,
+              quantidade: item.quantidade,
+              precoUnitario: item.precoUnitario,
+            }));
+            
+            setCarrinho(itensFormatados);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar edição:", error);
+          Alert.alert("Erro", "Não foi possível carregar os dados da compra.");
+        }
+      };
+      carregarCompra();
+    }
+  }, [isEditing, purchaseId]);
 
   // Efeito para buscar insumos quando o texto muda
   useEffect(() => {
@@ -102,19 +136,29 @@ export default function NovaCompraScreen() {
 
     setSalvando(true);
     try {
-      const dataAtual = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-      
-      await ComprasRepository.salvarCompraComItens(
-        dataAtual,
-        observacoes.trim() || undefined,
-        carrinho.map((item) => ({
-          insumoId: item.insumoId,
-          quantidade: item.quantidade,
-          precoUnitario: item.precoUnitario,
-        }))
-      );
+      const dataAtual = dataOriginal || new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const itensMapeados = carrinho.map((item) => ({
+        insumoId: item.insumoId,
+        quantidade: item.quantidade,
+        precoUnitario: item.precoUnitario,
+      }));
 
-      Alert.alert("Sucesso", "Compra salva com sucesso!");
+      if (isEditing) {
+        await ComprasRepository.atualizarCompraComItens(
+          purchaseId,
+          { data: dataAtual, observacoes: observacoes.trim() || undefined },
+          itensMapeados
+        );
+        Alert.alert("Sucesso", "Compra atualizada com sucesso!");
+      } else {
+        await ComprasRepository.salvarCompraComItens(
+          dataAtual,
+          observacoes.trim() || undefined,
+          itensMapeados
+        );
+        Alert.alert("Sucesso", "Compra salva com sucesso!");
+      }
+
       setCarrinho([]);
       setObservacoes("");
       router.back();
@@ -133,6 +177,9 @@ export default function NovaCompraScreen() {
 
   return (
     <View className="flex-1 bg-background px-4">
+      <Stack.Screen
+        options={{ title: isEditing ? "Editar Compra" : "Nova Compra" }}
+      />
       {/* Busca e Seleção de Insumo */}
       <View className="z-10 mt-4 mb-4">
         <View className="flex-row items-center justify-between mb-2">
@@ -295,7 +342,7 @@ export default function NovaCompraScreen() {
           style={(salvando || carrinho.length === 0) ? { opacity: 0.6 } : undefined}
         >
           <Text className="text-base font-bold text-white">
-            {salvando ? "Salvando..." : "Finalizar Compra"}
+            {salvando ? "Salvando..." : (isEditing ? "Salvar Edição" : "Finalizar Compra")}
           </Text>
         </Pressable>
       </View>
