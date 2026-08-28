@@ -2,11 +2,13 @@ import React, { useState, useCallback } from "react";
 import { View, Text, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { ProdutosRepository } from "../../db/repositories/produtos";
+import { ProducoesRepository } from "../../db/repositories/producoes";
 
 export default function ProdutoDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [produto, setProduto] = useState<any>(null);
+  const [ultimoCusto, setUltimoCusto] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [deletando, setDeletando] = useState(false);
 
@@ -18,6 +20,10 @@ export default function ProdutoDetailsScreen() {
       const data = await ProdutosRepository.obterProdutoPorId(productId);
       if (data) {
         setProduto(data);
+        if (data.receitaId) {
+          const custo = await ProducoesRepository.obterUltimoCustoProducao(data.receitaId);
+          setUltimoCusto(custo);
+        }
       } else {
         Alert.alert("Erro", "Produto não encontrado.");
         router.back();
@@ -89,7 +95,25 @@ export default function ProdutoDetailsScreen() {
           {produto.receitaId ? (
             <>
               <Text className="text-base font-bold text-primary">{produto.receitaNome}</Text>
-              <Text className="text-xs text-gray-500 mt-1">Rendimento: {produto.receitaRendimento}</Text>
+              <Text className="text-xs text-gray-500 mt-1 mb-3">Rendimento: {produto.receitaRendimento}</Text>
+              
+              {ultimoCusto !== null && (
+                <View className="border-t border-gray-100 pt-3">
+                  <View className="flex-row justify-between mb-2">
+                    <Text className="text-xs text-gray-500">Custo da Última Fornada:</Text>
+                    <Text className="text-sm font-bold text-red-500">R$ {ultimoCusto.toFixed(2)} / un</Text>
+                  </View>
+                  <View className="flex-row justify-between">
+                    <Text className="text-xs font-semibold text-primary">Margem de Lucro Atual:</Text>
+                    <Text className={`text-sm font-bold ${
+                      ((produto.precoVenda - ultimoCusto) / produto.precoVenda * 100) > 0 
+                      ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {(((produto.precoVenda - ultimoCusto) / produto.precoVenda) * 100).toFixed(1)}%
+                    </Text>
+                  </View>
+                </View>
+              )}
             </>
           ) : (
             <Text className="text-base text-gray-500 italic">Nenhuma receita vinculada</Text>

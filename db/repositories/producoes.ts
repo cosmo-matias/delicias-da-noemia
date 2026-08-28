@@ -105,4 +105,22 @@ export const ProducoesRepository = {
       return true;
     });
   },
+
+  // Obter o custo unitário da última produção registrada de uma receita
+  async obterUltimoCustoProducao(receitaId: number): Promise<number | null> {
+    const ultimaProducao = await db
+      .select({
+        custoTotalReal: producoes.custoTotalReal,
+        rendimentoReal: producoes.rendimentoReal,
+      })
+      .from(producoes)
+      .where(eq(producoes.receitaId, receitaId))
+      .orderBy(desc(producoes.id))
+      .limit(1)
+      .get();
+
+    if (!ultimaProducao || ultimaProducao.rendimentoReal <= 0) return null;
+    return ultimaProducao.custoTotalReal / ultimaProducao.rendimentoReal;
+  },
 };
+

@@ -11,7 +11,9 @@ import {
 import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import { ProdutosRepository } from "../../db/repositories/produtos";
 import { ReceitasRepository } from "../../db/repositories/receitas";
+import { ProducoesRepository } from "../../db/repositories/producoes";
 import type { Receita } from "../../db/schema";
+import { Feather } from "@expo/vector-icons";
 
 export default function NovoProdutoScreen() {
   const router = useRouter();
@@ -28,6 +30,7 @@ export default function NovoProdutoScreen() {
   const [receitasList, setReceitasList] = useState<Receita[]>([]);
   const [receitaSelecionada, setReceitaSelecionada] = useState<Receita | null>(null);
   const [pickerAtivo, setPickerAtivo] = useState(false);
+  const [ultimoCusto, setUltimoCusto] = useState<number | null>(null);
 
   const [salvando, setSalvando] = useState(false);
 
@@ -59,6 +62,18 @@ export default function NovoProdutoScreen() {
     };
     loadData();
   }, [isEditing, productId]);
+
+  useEffect(() => {
+    const fetchCusto = async () => {
+      if (receitaSelecionada) {
+        const custo = await ProducoesRepository.obterUltimoCustoProducao(receitaSelecionada.id);
+        setUltimoCusto(custo);
+      } else {
+        setUltimoCusto(null);
+      }
+    };
+    fetchCusto();
+  }, [receitaSelecionada]);
 
   const handleSalvar = async () => {
     if (!nome.trim()) {
@@ -165,6 +180,28 @@ export default function NovoProdutoScreen() {
                   <Text className="p-4 text-center text-gray-500">Nenhuma receita cadastrada.</Text>
                 )}
               </ScrollView>
+            </View>
+          )}
+
+          {/* Comparativo de Custos e Margem */}
+          {receitaSelecionada && ultimoCusto !== null && (
+            <View className="mt-4 rounded-xl border border-secondary/20 bg-gray-50 p-4">
+              <View className="flex-row justify-between mb-2">
+                <Text className="text-xs text-gray-500">Custo da Última Fornada:</Text>
+                <Text className="text-sm font-bold text-red-500">R$ {ultimoCusto.toFixed(2)} / un</Text>
+              </View>
+              
+              {parseFloat(precoVenda.replace(",", ".")) > 0 && (
+                <View className="flex-row justify-between pt-2 border-t border-gray-200">
+                  <Text className="text-xs font-semibold text-primary">Margem de Lucro:</Text>
+                  <Text className={`text-sm font-bold ${
+                    ((parseFloat(precoVenda.replace(",", ".")) - ultimoCusto) / parseFloat(precoVenda.replace(",", ".")) * 100) > 0 
+                    ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {(((parseFloat(precoVenda.replace(",", ".")) - ultimoCusto) / parseFloat(precoVenda.replace(",", "."))) * 100).toFixed(1)}%
+                  </Text>
+                </View>
+              )}
             </View>
           )}
         </View>
