@@ -87,6 +87,11 @@ export default function PurchaseDetailsScreen() {
           <Text className="text-3xl font-bold text-primary mb-2">
             R$ {compra.valorTotal.toFixed(2).replace(".", ",")}
           </Text>
+          {compra.custosExtras > 0 && (
+            <Text className="text-sm text-red-500 font-semibold mb-2">
+              (Inclui R$ {compra.custosExtras.toFixed(2).replace(".", ",")} de custos extras)
+            </Text>
+          )}
           <Text className="text-base text-gray-600 font-medium">
             Realizada em {formatDate(compra.data)}
           </Text>

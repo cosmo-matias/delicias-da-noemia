@@ -40,6 +40,7 @@ export default function NovaCompraScreen() {
   // Estados do Carrinho e Compra
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
   const [observacoes, setObservacoes] = useState("");
+  const [custosExtras, setCustosExtras] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [dataOriginal, setDataOriginal] = useState<string | null>(null);
 
@@ -54,6 +55,7 @@ export default function NovaCompraScreen() {
           const compra = await ComprasRepository.obterCompraPorId(purchaseId);
           if (compra) {
             setObservacoes(compra.observacoes || "");
+            setCustosExtras(compra.custosExtras ? compra.custosExtras.toString() : "");
             setDataOriginal(compra.data);
             
             const itensFormatados: CartItem[] = compra.itens.map((item: any) => ({
@@ -143,10 +145,12 @@ export default function NovaCompraScreen() {
         precoUnitario: item.precoUnitario,
       }));
 
+      const extrasNumber = parseFloat(custosExtras.replace(",", ".")) || 0;
+
       if (isEditing) {
         await ComprasRepository.atualizarCompraComItens(
           purchaseId,
-          { data: dataAtual, observacoes: observacoes.trim() || undefined },
+          { data: dataAtual, custosExtras: extrasNumber, observacoes: observacoes.trim() || undefined },
           itensMapeados
         );
         Alert.alert("Sucesso", "Compra atualizada com sucesso!");
@@ -154,6 +158,7 @@ export default function NovaCompraScreen() {
         await ComprasRepository.salvarCompraComItens(
           dataAtual,
           observacoes.trim() || undefined,
+          extrasNumber,
           itensMapeados
         );
         Alert.alert("Sucesso", "Compra salva com sucesso!");
@@ -170,10 +175,12 @@ export default function NovaCompraScreen() {
     }
   };
 
-  const valorTotalCompra = carrinho.reduce(
+  const valorTotalItens = carrinho.reduce(
     (acc, item) => acc + item.quantidade * item.precoUnitario,
     0
   );
+  const extrasNumberDisplay = parseFloat(custosExtras.replace(",", ".")) || 0;
+  const valorTotalCompra = valorTotalItens + extrasNumberDisplay;
 
   return (
     <View className="flex-1 bg-background px-4">
@@ -307,6 +314,21 @@ export default function NovaCompraScreen() {
             ))}
           </View>
         )}
+
+        {/* Custos Extras */}
+        <View className="mb-6">
+          <Text className="mb-2 text-sm font-semibold text-primary">
+            Custos Extras (Ex: Uber, Frete)
+          </Text>
+          <TextInput
+            className="rounded-xl border border-secondary/40 bg-white px-4 py-3 text-base text-primary"
+            placeholder="Ex: 10.50"
+            placeholderTextColor="#D89A92"
+            keyboardType="decimal-pad"
+            value={custosExtras}
+            onChangeText={setCustosExtras}
+          />
+        </View>
 
         {/* Observações */}
         <View className="mb-6">
