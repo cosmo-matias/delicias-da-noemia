@@ -25,6 +25,9 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
+    "experiments": {
+      "crossOriginIsolatedProxy": true
+    },
     "plugins": [
       "expo-router",
       "expo-sqlite"

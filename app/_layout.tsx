@@ -1,3 +1,4 @@
+import "../polyfill";
 import "../global.css";
 
 import { useEffect, useState } from "react";
