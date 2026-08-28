@@ -66,6 +66,14 @@ export default function RootLayout() {
           name="purchases/new"
           options={{ title: "Nova Compra" }}
         />
+        <Stack.Screen
+          name="recipes/index"
+          options={{ title: "Receitas" }}
+        />
+        <Stack.Screen
+          name="recipes/new"
+          options={{ title: "Nova Receita" }}
+        />
       </Stack>
     </>
   );

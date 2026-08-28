@@ -22,7 +22,7 @@ const MENU_ITEMS: MenuButton[] = [
     subtitle: "Cadastrar fichas técnicas",
     route: "/recipes",
     emoji: "📋",
-    enabled: false,
+    enabled: true,
   },
   {
     label: "Produtos",

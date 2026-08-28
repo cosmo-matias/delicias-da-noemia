@@ -1,6 +1,4 @@
 import { db } from "./client";
-import { ingredients, purchases, purchaseItems } from "./schema";
-import { sql } from "drizzle-orm";
 
 /**
  * Cria as tabelas no banco de dados caso não existam.
@@ -34,6 +32,22 @@ export async function initDatabase() {
       unit TEXT NOT NULL CHECK(unit IN ('kg', 'g', 'L', 'ml', 'un')),
       unit_price REAL NOT NULL,
       total_price REAL NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS recipes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      yield_quantity INTEGER NOT NULL DEFAULT 1,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS recipe_ingredients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      recipe_id INTEGER NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+      ingredient_id INTEGER NOT NULL REFERENCES ingredients(id) ON DELETE RESTRICT,
+      quantity REAL NOT NULL,
+      unit TEXT NOT NULL CHECK(unit IN ('kg', 'g', 'L', 'ml', 'un'))
     );
   `);
 }
