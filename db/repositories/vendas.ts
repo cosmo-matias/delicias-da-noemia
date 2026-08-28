@@ -129,4 +129,9 @@ export const VendasRepository = {
       return true;
     });
   },
+
+  // Listar todas as vendas (para a tela de histórico)
+  async listarVendas() {
+    return await db.select().from(vendas).orderBy(vendas.id);
+  },
 };
