@@ -90,6 +90,10 @@ export default function RootLayout() {
           name="sales/new"
           options={{ title: "Nova Venda" }}
         />
+        <Stack.Screen
+          name="dashboard/index"
+          options={{ title: "Dashboard" }}
+        />
       </Stack>
     </>
   );

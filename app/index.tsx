@@ -43,7 +43,7 @@ const MENU_ITEMS: MenuButton[] = [
     subtitle: "Resumo e indicadores",
     route: "/dashboard",
     emoji: "📊",
-    enabled: false,
+    enabled: true,
   },
 ];
 
