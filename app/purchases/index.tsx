@@ -1,22 +1,22 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { View, Text, Pressable, FlatList } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { db } from "../../db/client";
-import { purchases } from "../../db/schema";
+import { compras } from "../../db/schema";
 import { desc } from "drizzle-orm";
-import type { Purchase } from "../../db/schema";
+import type { Compra } from "../../db/schema";
 
 export default function PurchasesListScreen() {
   const router = useRouter();
-  const [purchaseList, setPurchaseList] = useState<Purchase[]>([]);
+  const [purchaseList, setPurchaseList] = useState<Compra[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadPurchases = useCallback(async () => {
     try {
       const result = await db
         .select()
-        .from(purchases)
-        .orderBy(desc(purchases.date));
+        .from(compras)
+        .orderBy(desc(compras.data));
       setPurchaseList(result);
     } catch (err) {
       console.error("Erro ao carregar compras:", err);
@@ -53,21 +53,21 @@ export default function PurchasesListScreen() {
     </View>
   );
 
-  const renderPurchaseItem = ({ item }: { item: Purchase }) => (
+  const renderPurchaseItem = ({ item }: { item: Compra }) => (
     <Pressable className="mb-3 rounded-xl border border-secondary/20 bg-white p-4 active:opacity-80">
       <View className="flex-row items-center justify-between">
         <View>
           <Text className="text-base font-semibold text-primary">
-            {formatDate(item.date)}
+            {formatDate(item.data)}
           </Text>
-          {item.notes ? (
+          {item.observacoes ? (
             <Text className="mt-1 text-sm text-secondary" numberOfLines={1}>
-              {item.notes}
+              {item.observacoes}
             </Text>
           ) : null}
         </View>
         <Text className="text-lg font-bold text-primary">
-          {formatCurrency(item.totalAmount)}
+          {formatCurrency(item.valorTotal)}
         </Text>
       </View>
     </Pressable>
@@ -81,7 +81,7 @@ export default function PurchasesListScreen() {
           <Text className="text-sm text-secondary">Total em compras</Text>
           <Text className="text-2xl font-bold text-white">
             {formatCurrency(
-              purchaseList.reduce((sum, p) => sum + p.totalAmount, 0)
+              purchaseList.reduce((sum, p) => sum + p.valorTotal, 0)
             )}
           </Text>
           <Text className="mt-1 text-xs text-secondary">
