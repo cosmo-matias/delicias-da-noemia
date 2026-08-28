@@ -88,6 +88,7 @@ export async function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       data TEXT NOT NULL,
       valor_total REAL NOT NULL DEFAULT 0,
+      custos_extras REAL NOT NULL DEFAULT 0,
       observacoes TEXT
     );
 
@@ -99,5 +100,27 @@ export async function initDatabase() {
       preco_unitario REAL NOT NULL,
       preco_total REAL NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS receitas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      rendimento REAL NOT NULL DEFAULT 1,
+      custo_adicional REAL NOT NULL DEFAULT 0,
+      observacoes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS receitas_insumos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      receita_id INTEGER NOT NULL REFERENCES receitas(id) ON DELETE CASCADE,
+      insumo_id INTEGER NOT NULL REFERENCES insumos(id) ON DELETE RESTRICT,
+      quantidade_utilizada REAL NOT NULL
+    );
   `);
+
+  // Migrate existing `compras` table by adding `custos_extras` if it doesn't exist yet
+  try {
+    database.execSync("ALTER TABLE compras ADD COLUMN custos_extras REAL NOT NULL DEFAULT 0;");
+  } catch (e) {
+    // Ignore error if column already exists
+  }
 }

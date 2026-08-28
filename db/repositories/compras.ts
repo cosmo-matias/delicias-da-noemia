@@ -40,6 +40,7 @@ export const ComprasRepository = {
   async salvarCompraComItens(
     data: string,
     observacoes: string | undefined,
+    custosExtras: number,
     itens: {
       insumoId: number;
       quantidade: number;
@@ -59,6 +60,7 @@ export const ComprasRepository = {
         .values({
           data,
           valorTotal,
+          custosExtras,
           observacoes,
         })
         .returning();
@@ -107,7 +109,7 @@ export const ComprasRepository = {
   // Atualizar compra e itens (deleta e insere novamente os itens)
   async atualizarCompraComItens(
     id: number,
-    compraData: { data: string; observacoes?: string },
+    compraData: { data: string; custosExtras: number; observacoes?: string },
     itens: {
       insumoId: number;
       quantidade: number;
@@ -127,6 +129,7 @@ export const ComprasRepository = {
         .set({
           data: compraData.data,
           valorTotal,
+          custosExtras: compraData.custosExtras,
           observacoes: compraData.observacoes,
         })
         .where(eq(compras.id, id));

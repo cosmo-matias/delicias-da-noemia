@@ -229,6 +229,7 @@ export const compras = sqliteTable("compras", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   data: text("data").notNull(),
   valorTotal: real("valor_total").notNull().default(0),
+  custosExtras: real("custos_extras").notNull().default(0),
   observacoes: text("observacoes"),
 });
 
@@ -243,6 +244,7 @@ export const comprasItens = sqliteTable("compras_itens", {
 
 export const insumosRelations = relations(insumos, ({ many }) => ({
   comprasItens: many(comprasItens),
+  receitasInsumos: many(receitasInsumos),
 }));
 
 export const comprasRelations = relations(compras, ({ many }) => ({
@@ -263,3 +265,38 @@ export const comprasItensRelations = relations(comprasItens, ({ one }) => ({
 export type Insumo = typeof insumos.$inferSelect;
 export type Compra = typeof compras.$inferSelect;
 export type CompraItem = typeof comprasItens.$inferSelect;
+
+// ─── Receitas (Português) ────────────────────────────────────────────
+
+export const receitas = sqliteTable("receitas", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  nome: text("nome").notNull(),
+  rendimento: real("rendimento").notNull().default(1),
+  custoAdicional: real("custo_adicional").notNull().default(0),
+  observacoes: text("observacoes"),
+});
+
+export const receitasInsumos = sqliteTable("receitas_insumos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  receitaId: integer("receita_id").notNull().references(() => receitas.id, { onDelete: "cascade" }),
+  insumoId: integer("insumo_id").notNull().references(() => insumos.id, { onDelete: "restrict" }),
+  quantidadeUtilizada: real("quantidade_utilizada").notNull(),
+});
+
+export const receitasRelations = relations(receitas, ({ many }) => ({
+  insumos: many(receitasInsumos),
+}));
+
+export const receitasInsumosRelations = relations(receitasInsumos, ({ one }) => ({
+  receita: one(receitas, {
+    fields: [receitasInsumos.receitaId],
+    references: [receitas.id],
+  }),
+  insumo: one(insumos, {
+    fields: [receitasInsumos.insumoId],
+    references: [insumos.id],
+  }),
+}));
+
+export type Receita = typeof receitas.$inferSelect;
+export type ReceitaInsumo = typeof receitasInsumos.$inferSelect;
