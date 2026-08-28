@@ -25,12 +25,15 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "experiments": {
-      "crossOriginIsolatedProxy": true
-    },
     "plugins": [
       "expo-router",
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "352dba5a-2911-4183-a352-dc5659ef159f"
+      }
+    }
   }
 }
