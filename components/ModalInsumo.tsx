@@ -11,8 +11,8 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { ComprasRepository } from "../../db/repositories/compras";
-import type { Insumo } from "../../db/schema";
+import { ComprasRepository } from "../db/repositories/compras";
+import type { Insumo } from "../db/schema";
 
 type ModalInsumoProps = {
   visible: boolean;
