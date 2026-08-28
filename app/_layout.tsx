@@ -88,6 +88,18 @@ export default function RootLayout() {
           options={{ title: "Novo Produto" }}
         />
         <Stack.Screen
+          name="producoes/index"
+          options={{ title: "Produção Diária" }}
+        />
+        <Stack.Screen
+          name="producoes/new"
+          options={{ title: "Registrar Fornada" }}
+        />
+        <Stack.Screen
+          name="producoes/[id]"
+          options={{ title: "Detalhes da Produção" }}
+        />
+        <Stack.Screen
           name="sales/index"
           options={{ title: "Vendas" }}
         />

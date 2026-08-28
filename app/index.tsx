@@ -25,6 +25,13 @@ const MENU_ITEMS: MenuButton[] = [
     enabled: true,
   },
   {
+    label: "Produção",
+    subtitle: "Registrar fornadas diárias",
+    route: "/producoes",
+    emoji: "👨‍🍳",
+    enabled: true,
+  },
+  {
     label: "Produtos",
     subtitle: "Precificação e catálogo",
     route: "/products",
