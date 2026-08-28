@@ -29,7 +29,14 @@ const MENU_ITEMS: MenuButton[] = [
     subtitle: "Precificação e catálogo",
     route: "/products",
     emoji: "🧁",
-    enabled: false,
+    enabled: true,
+  },
+  {
+    label: "Vendas",
+    subtitle: "Registro e fechamento diário",
+    route: "/sales",
+    emoji: "💰",
+    enabled: true,
   },
   {
     label: "Dashboard",

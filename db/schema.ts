@@ -90,6 +90,7 @@ export const recipes = sqliteTable("recipes", {
 
 export const recipesRelations = relations(recipes, ({ many }) => ({
   ingredients: many(recipeIngredients),
+  products: many(products),
 }));
 
 // ─── Recipe Ingredients (Ficha Técnica) ──────────────────────────────
@@ -122,6 +123,71 @@ export const recipeIngredientsRelations = relations(
   })
 );
 
+// ─── Products (Produtos) ─────────────────────────────────────────────
+
+export const products = sqliteTable("products", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  recipeId: integer("recipe_id")
+    .notNull()
+    .references(() => recipes.id, { onDelete: "restrict" }),
+  salePrice: real("sale_price").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export const productsRelations = relations(products, ({ one, many }) => ({
+  recipe: one(recipes, {
+    fields: [products.recipeId],
+    references: [recipes.id],
+  }),
+  saleItems: many(saleItems),
+}));
+
+// ─── Sales (Vendas/Fechamento) ───────────────────────────────────────
+
+export const sales = sqliteTable("sales", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  date: text("date").notNull(), // ISO date string
+  discount: real("discount").notNull().default(0),
+  totalAmount: real("total_amount").notNull().default(0),
+  notes: text("notes"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export const salesRelations = relations(sales, ({ many }) => ({
+  items: many(saleItems),
+}));
+
+// ─── Sale Items (Itens da Venda) ─────────────────────────────────────
+
+export const saleItems = sqliteTable("sale_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  saleId: integer("sale_id")
+    .notNull()
+    .references(() => sales.id, { onDelete: "cascade" }),
+  productId: integer("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+  quantity: integer("quantity").notNull(),
+  unitPrice: real("unit_price").notNull(),
+  totalPrice: real("total_price").notNull(),
+});
+
+export const saleItemsRelations = relations(saleItems, ({ one }) => ({
+  sale: one(sales, {
+    fields: [saleItems.saleId],
+    references: [sales.id],
+  }),
+  product: one(products, {
+    fields: [saleItems.productId],
+    references: [products.id],
+  }),
+}));
+
 // ─── Types ───────────────────────────────────────────────────────────
 
 export type Ingredient = typeof ingredients.$inferSelect;
@@ -138,3 +204,12 @@ export type NewRecipe = typeof recipes.$inferInsert;
 
 export type RecipeIngredient = typeof recipeIngredients.$inferSelect;
 export type NewRecipeIngredient = typeof recipeIngredients.$inferInsert;
+
+export type Product = typeof products.$inferSelect;
+export type NewProduct = typeof products.$inferInsert;
+
+export type Sale = typeof sales.$inferSelect;
+export type NewSale = typeof sales.$inferInsert;
+
+export type SaleItem = typeof saleItems.$inferSelect;
+export type NewSaleItem = typeof saleItems.$inferInsert;
