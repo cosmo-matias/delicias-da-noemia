@@ -115,6 +115,31 @@ export async function initDatabase() {
       insumo_id INTEGER NOT NULL REFERENCES insumos(id) ON DELETE RESTRICT,
       quantidade_utilizada REAL NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS produtos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      receita_id INTEGER REFERENCES receitas(id) ON DELETE RESTRICT,
+      preco_venda REAL NOT NULL,
+      observacoes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS vendas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      data TEXT NOT NULL,
+      valor_total REAL NOT NULL DEFAULT 0,
+      custos_extras REAL NOT NULL DEFAULT 0,
+      observacoes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS vendas_itens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      venda_id INTEGER NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
+      produto_id INTEGER NOT NULL REFERENCES produtos(id) ON DELETE RESTRICT,
+      quantidade REAL NOT NULL,
+      preco_unitario REAL NOT NULL,
+      preco_total REAL NOT NULL
+    );
   `);
 
   // Migrate existing `compras` table by adding `custos_extras` if it doesn't exist yet

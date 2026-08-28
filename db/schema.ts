@@ -300,3 +300,59 @@ export const receitasInsumosRelations = relations(receitasInsumos, ({ one }) => 
 
 export type Receita = typeof receitas.$inferSelect;
 export type ReceitaInsumo = typeof receitasInsumos.$inferSelect;
+
+// ─── Produtos (Português) ────────────────────────────────────────────
+
+export const produtos = sqliteTable("produtos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  nome: text("nome").notNull(),
+  receitaId: integer("receita_id").references(() => receitas.id, { onDelete: "restrict" }),
+  precoVenda: real("preco_venda").notNull(),
+  observacoes: text("observacoes"),
+});
+
+export const produtosRelations = relations(produtos, ({ one, many }) => ({
+  receita: one(receitas, {
+    fields: [produtos.receitaId],
+    references: [receitas.id],
+  }),
+  vendasItens: many(vendasItens),
+}));
+
+// ─── Vendas (Português) ──────────────────────────────────────────────
+
+export const vendas = sqliteTable("vendas", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  data: text("data").notNull(),
+  valorTotal: real("valor_total").notNull().default(0),
+  custosExtras: real("custos_extras").notNull().default(0),
+  observacoes: text("observacoes"),
+});
+
+export const vendasItens = sqliteTable("vendas_itens", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  vendaId: integer("venda_id").notNull().references(() => vendas.id, { onDelete: "cascade" }),
+  produtoId: integer("produto_id").notNull().references(() => produtos.id, { onDelete: "restrict" }),
+  quantidade: real("quantidade").notNull(),
+  precoUnitario: real("preco_unitario").notNull(),
+  precoTotal: real("preco_total").notNull(),
+});
+
+export const vendasRelations = relations(vendas, ({ many }) => ({
+  itens: many(vendasItens),
+}));
+
+export const vendasItensRelations = relations(vendasItens, ({ one }) => ({
+  venda: one(vendas, {
+    fields: [vendasItens.vendaId],
+    references: [vendas.id],
+  }),
+  produto: one(produtos, {
+    fields: [vendasItens.produtoId],
+    references: [produtos.id],
+  }),
+}));
+
+export type Produto = typeof produtos.$inferSelect;
+export type Venda = typeof vendas.$inferSelect;
+export type VendaItem = typeof vendasItens.$inferSelect;
