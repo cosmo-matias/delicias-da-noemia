@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,173 +6,308 @@ import {
   Pressable,
   ScrollView,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
+  FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { db } from "../../db/client";
-import { purchases } from "../../db/schema";
+import { ComprasRepository } from "../../db/repositories/compras";
+import type { Insumo } from "../../db/schema";
+import ModalInsumo from "../../components/ModalInsumo";
 
-export default function NewPurchaseScreen() {
+type CartItem = {
+  insumoId: number;
+  nome: string;
+  marca: string;
+  unidadeMedida: string;
+  quantidade: number;
+  precoUnitario: number;
+};
+
+export default function NovaCompraScreen() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
+  
+  // Estados para Busca
+  const [busca, setBusca] = useState("");
+  const [insumosList, setInsumosList] = useState<Insumo[]>([]);
+  const [insumoSelecionado, setInsumoSelecionado] = useState<Insumo | null>(null);
 
-  // Campos do formulário
-  const [date, setDate] = useState(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  });
-  const [totalAmount, setTotalAmount] = useState("");
-  const [notes, setNotes] = useState("");
+  // Estados do Formulário de Adição de Item
+  const [quantidade, setQuantidade] = useState("");
+  const [precoUnitario, setPrecoUnitario] = useState("");
 
-  const formatDateInput = (text: string) => {
-    // Remove tudo que não for número
-    const digits = text.replace(/\D/g, "");
-    // Aplica a máscara DD/MM/AAAA
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+  // Estados do Carrinho e Compra
+  const [carrinho, setCarrinho] = useState<CartItem[]>([]);
+  const [observacoes, setObservacoes] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  // Estado do Modal de Cadastro Rápido de Insumo
+  const [modalInsumoVisivel, setModalInsumoVisivel] = useState(false);
+
+  // Efeito para buscar insumos quando o texto muda
+  useEffect(() => {
+    const buscar = async () => {
+      const resultados = await ComprasRepository.listarInsumos(busca);
+      setInsumosList(resultados);
+    };
+    buscar();
+  }, [busca]);
+
+  const handleSelecionarInsumo = (insumo: Insumo) => {
+    setInsumoSelecionado(insumo);
+    setBusca(""); // Limpa a busca ao selecionar
+    setQuantidade("");
+    setPrecoUnitario("");
   };
 
-  const displayDate = () => {
-    if (!date) return "";
-    const [y, m, d] = date.split("-");
-    return `${d}/${m}/${y}`;
-  };
+  const handleAdicionarCarrinho = () => {
+    if (!insumoSelecionado) return;
+    
+    const qtd = parseFloat(quantidade.replace(",", "."));
+    const preco = parseFloat(precoUnitario.replace(",", "."));
 
-  const handleDateChange = (text: string) => {
-    const formatted = formatDateInput(text);
-    // Converte de DD/MM/AAAA para AAAA-MM-DD internamente
-    const digits = text.replace(/\D/g, "");
-    if (digits.length === 8) {
-      const dd = digits.slice(0, 2);
-      const mm = digits.slice(2, 4);
-      const yyyy = digits.slice(4, 8);
-      setDate(`${yyyy}-${mm}-${dd}`);
-    } else {
-      // Enquanto digita, armazena o texto formatado temporariamente
-      setDate(formatted);
+    if (isNaN(qtd) || qtd <= 0) {
+      Alert.alert("Erro", "Insira uma quantidade válida.");
+      return;
     }
-  };
-
-  const validateForm = (): boolean => {
-    if (!date || date.length !== 10 || !date.includes("-")) {
-      Alert.alert("Erro", "Informe uma data válida (DD/MM/AAAA).");
-      return false;
-    }
-
-    const amount = parseFloat(totalAmount.replace(",", "."));
-    if (isNaN(amount) || amount <= 0) {
-      Alert.alert("Erro", "Informe um valor total válido.");
-      return false;
+    if (isNaN(preco) || preco < 0) {
+      Alert.alert("Erro", "Insira um preço unitário válido.");
+      return;
     }
 
-    return true;
+    const novoItem: CartItem = {
+      insumoId: insumoSelecionado.id,
+      nome: insumoSelecionado.nome,
+      marca: insumoSelecionado.marca || "",
+      unidadeMedida: insumoSelecionado.unidadeMedida,
+      quantidade: qtd,
+      precoUnitario: preco,
+    };
+
+    setCarrinho([...carrinho, novoItem]);
+    setInsumoSelecionado(null);
+    setQuantidade("");
+    setPrecoUnitario("");
   };
 
-  const handleSave = async () => {
-    if (!validateForm()) return;
+  const handleRemoverDoCarrinho = (index: number) => {
+    const novoCarrinho = [...carrinho];
+    novoCarrinho.splice(index, 1);
+    setCarrinho(novoCarrinho);
+  };
 
-    setSaving(true);
+  const handleSalvarCompra = async () => {
+    if (carrinho.length === 0) {
+      Alert.alert("Erro", "Adicione pelo menos um item à compra.");
+      return;
+    }
+
+    setSalvando(true);
     try {
-      const amount = parseFloat(totalAmount.replace(",", "."));
+      const dataAtual = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      
+      await ComprasRepository.salvarCompraComItens(
+        dataAtual,
+        observacoes.trim() || undefined,
+        carrinho.map((item) => ({
+          insumoId: item.insumoId,
+          quantidade: item.quantidade,
+          precoUnitario: item.precoUnitario,
+        }))
+      );
 
-      await db.insert(purchases).values({
-        date,
-        totalAmount: amount,
-        notes: notes.trim() || null,
-      });
-
-      Alert.alert("Sucesso", "Compra registrada com sucesso!", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
-    } catch (err) {
-      console.error("Erro ao salvar compra:", err);
+      Alert.alert("Sucesso", "Compra salva com sucesso!");
+      setCarrinho([]);
+      setObservacoes("");
+      router.back();
+    } catch (error) {
+      console.error("Erro ao salvar compra:", error);
       Alert.alert("Erro", "Não foi possível salvar a compra.");
     } finally {
-      setSaving(false);
+      setSalvando(false);
     }
   };
 
+  const valorTotalCompra = carrinho.reduce(
+    (acc, item) => acc + item.quantidade * item.precoUnitario,
+    0
+  );
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1"
-    >
-      <ScrollView
-        className="flex-1 bg-background px-5 pt-6"
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Data */}
-        <View className="mb-5">
-          <Text className="mb-2 text-sm font-semibold text-primary">
-            Data da Compra *
+    <View className="flex-1 bg-background px-4">
+      {/* Busca e Seleção de Insumo */}
+      <View className="z-10 mt-4 mb-4">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-sm font-semibold text-primary">
+            Buscar Insumo
           </Text>
-          <TextInput
-            className="rounded-xl border border-secondary/40 bg-white px-4 py-3 text-base text-primary"
-            placeholder="DD/MM/AAAA"
-            placeholderTextColor="#D89A92"
-            value={displayDate()}
-            onChangeText={handleDateChange}
-            keyboardType="numeric"
-            maxLength={10}
-          />
+          <Pressable onPress={() => setModalInsumoVisivel(true)}>
+            <Text className="text-sm font-bold text-secondary">+ Novo Insumo</Text>
+          </Pressable>
         </View>
 
-        {/* Valor Total */}
-        <View className="mb-5">
-          <Text className="mb-2 text-sm font-semibold text-primary">
-            Valor Total (R$) *
-          </Text>
-          <TextInput
-            className="rounded-xl border border-secondary/40 bg-white px-4 py-3 text-base text-primary"
-            placeholder="0,00"
-            placeholderTextColor="#D89A92"
-            value={totalAmount}
-            onChangeText={setTotalAmount}
-            keyboardType="decimal-pad"
-          />
-        </View>
+        {!insumoSelecionado && (
+          <>
+            <TextInput
+              className="rounded-xl border border-secondary/40 bg-white px-4 py-3 text-base text-primary"
+              placeholder="Digite o nome do insumo..."
+              placeholderTextColor="#D89A92"
+              value={busca}
+              onChangeText={setBusca}
+            />
+            
+            {busca.length > 0 && insumosList.length > 0 && (
+              <View className="absolute top-[80px] left-0 right-0 max-h-48 rounded-xl bg-white p-2 shadow-lg elevation-5 z-20">
+                <FlatList
+                  data={insumosList}
+                  keyExtractor={(item) => item.id.toString()}
+                  keyboardShouldPersistTaps="handled"
+                  renderItem={({ item }) => (
+                    <Pressable
+                      className="border-b border-gray-100 p-3"
+                      onPress={() => handleSelecionarInsumo(item)}
+                    >
+                      <Text className="font-bold text-primary">{item.nome}</Text>
+                      {item.marca && <Text className="text-xs text-gray-500">{item.marca}</Text>}
+                    </Pressable>
+                  )}
+                />
+              </View>
+            )}
+            
+            {busca.length > 0 && insumosList.length === 0 && (
+              <View className="absolute top-[80px] left-0 right-0 rounded-xl bg-white p-4 shadow-lg elevation-5 z-20">
+                <Text className="text-center text-sm text-gray-500">Nenhum insumo encontrado.</Text>
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {/* Formulário do Insumo Selecionado */}
+        {insumoSelecionado && (
+          <View className="mb-6 rounded-xl border border-secondary/30 bg-white p-4">
+            <View className="mb-4 flex-row justify-between items-start">
+              <View>
+                <Text className="text-lg font-bold text-primary">{insumoSelecionado.nome}</Text>
+                <Text className="text-sm text-gray-500">
+                  {insumoSelecionado.marca ? `${insumoSelecionado.marca} • ` : ""}
+                  Vendido em {insumoSelecionado.unidadeMedida}
+                </Text>
+              </View>
+              <Pressable onPress={() => setInsumoSelecionado(null)}>
+                <Text className="text-xs font-bold text-red-500">Trocar</Text>
+              </Pressable>
+            </View>
+
+            <View className="flex-row justify-between gap-4">
+              <View className="flex-1">
+                <Text className="mb-1 text-xs font-semibold text-primary">Qtd Comprada</Text>
+                <TextInput
+                  className="rounded-xl border border-secondary/40 bg-gray-50 px-3 py-2 text-primary"
+                  placeholder="Ex: 2"
+                  keyboardType="decimal-pad"
+                  value={quantidade}
+                  onChangeText={setQuantidade}
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="mb-1 text-xs font-semibold text-primary">Preço Unit. (R$)</Text>
+                <TextInput
+                  className="rounded-xl border border-secondary/40 bg-gray-50 px-3 py-2 text-primary"
+                  placeholder="Ex: 15.50"
+                  keyboardType="decimal-pad"
+                  value={precoUnitario}
+                  onChangeText={setPrecoUnitario}
+                />
+              </View>
+            </View>
+            
+            <Pressable
+              onPress={handleAdicionarCarrinho}
+              className="mt-4 items-center rounded-xl bg-secondary py-3"
+            >
+              <Text className="font-bold text-white">Adicionar ao Carrinho</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Lista de Itens no Carrinho */}
+        {carrinho.length > 0 && (
+          <View className="mb-6">
+            <Text className="mb-2 text-lg font-bold text-primary">
+              Carrinho ({carrinho.length})
+            </Text>
+            {carrinho.map((item, index) => (
+              <View
+                key={index}
+                className="mb-2 flex-row items-center justify-between rounded-xl bg-white p-3 shadow-sm"
+              >
+                <View className="flex-1">
+                  <Text className="font-bold text-primary">{item.nome}</Text>
+                  <Text className="text-xs text-gray-500">
+                    {item.quantidade} {item.unidadeMedida} x R$ {item.precoUnitario.toFixed(2)}
+                  </Text>
+                </View>
+                <View className="items-end mr-4">
+                  <Text className="font-bold text-primary">
+                    R$ {(item.quantidade * item.precoUnitario).toFixed(2)}
+                  </Text>
+                </View>
+                <Pressable onPress={() => handleRemoverDoCarrinho(index)}>
+                  <Text className="text-lg font-bold text-red-500">X</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Observações */}
-        <View className="mb-8">
+        <View className="mb-6">
           <Text className="mb-2 text-sm font-semibold text-primary">
-            Observações
+            Observações Gerais
           </Text>
           <TextInput
-            className="min-h-[100px] rounded-xl border border-secondary/40 bg-white px-4 py-3 text-base text-primary"
-            placeholder="Loja, promoções, observações..."
+            className="rounded-xl border border-secondary/40 bg-white px-4 py-3 text-base text-primary"
+            placeholder="Ex: Fui no mercado X..."
             placeholderTextColor="#D89A92"
-            value={notes}
-            onChangeText={setNotes}
+            value={observacoes}
+            onChangeText={setObservacoes}
             multiline
+            numberOfLines={3}
             textAlignVertical="top"
           />
         </View>
+      </ScrollView>
 
-        {/* Botão Salvar */}
-        <Pressable
-          onPress={handleSave}
-          disabled={saving}
-          className="mb-6 items-center rounded-xl bg-primary py-4 active:opacity-80"
-          style={saving ? { opacity: 0.6 } : undefined}
-        >
-          <Text className="text-base font-bold text-white">
-            {saving ? "Salvando..." : "Registrar Compra"}
-          </Text>
-        </Pressable>
-
-        {/* Info */}
-        <View className="mb-10 rounded-xl border border-secondary/20 bg-white p-4">
-          <Text className="text-xs text-secondary">
-            💡 Na próxima fase, você poderá adicionar itens individuais
-            (ingredientes, quantidades e preços) a cada compra.
+      {/* Resumo e Salvar */}
+      <View className="border-t border-gray-200 bg-background py-4 pb-8">
+        <View className="mb-4 flex-row justify-between items-center px-2">
+          <Text className="text-lg text-primary">Valor Total:</Text>
+          <Text className="text-2xl font-bold text-primary">
+            R$ {valorTotalCompra.toFixed(2)}
           </Text>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        <Pressable
+          onPress={handleSalvarCompra}
+          disabled={salvando || carrinho.length === 0}
+          className="items-center rounded-xl bg-primary py-4"
+          style={(salvando || carrinho.length === 0) ? { opacity: 0.6 } : undefined}
+        >
+          <Text className="text-base font-bold text-white">
+            {salvando ? "Salvando..." : "Finalizar Compra"}
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Modal de Insumo */}
+      <ModalInsumo
+        visible={modalInsumoVisivel}
+        onClose={() => setModalInsumoVisivel(false)}
+        onSuccess={(novo) => {
+          handleSelecionarInsumo(novo);
+        }}
+      />
+    </View>
   );
 }
