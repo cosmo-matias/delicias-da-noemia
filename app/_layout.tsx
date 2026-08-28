@@ -94,6 +94,10 @@ export default function RootLayout() {
           name="dashboard/index"
           options={{ title: "Dashboard" }}
         />
+        <Stack.Screen
+          name="sync/index"
+          options={{ title: "Backup e Nuvem" }}
+        />
       </Stack>
     </>
   );

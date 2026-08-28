@@ -45,6 +45,13 @@ const MENU_ITEMS: MenuButton[] = [
     emoji: "📊",
     enabled: true,
   },
+  {
+    label: "Backup / Nuvem",
+    subtitle: "Sincronizar com Google Drive",
+    route: "/sync",
+    emoji: "☁️",
+    enabled: true,
+  },
 ];
 
 export default function HomeScreen() {
