@@ -140,6 +140,23 @@ export async function initDatabase() {
       preco_unitario REAL NOT NULL,
       preco_total REAL NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS producoes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      receita_id INTEGER NOT NULL REFERENCES receitas(id) ON DELETE RESTRICT,
+      data TEXT NOT NULL,
+      rendimento_real REAL NOT NULL,
+      custo_total_real REAL NOT NULL,
+      observacoes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS producoes_insumos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      producao_id INTEGER NOT NULL REFERENCES producoes(id) ON DELETE CASCADE,
+      insumo_id INTEGER NOT NULL REFERENCES insumos(id) ON DELETE RESTRICT,
+      quantidade_utilizada REAL NOT NULL,
+      custo_calculado REAL NOT NULL
+    );
   `);
 
   // Migrate existing `compras` table by adding `custos_extras` if it doesn't exist yet

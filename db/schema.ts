@@ -356,3 +356,44 @@ export const vendasItensRelations = relations(vendasItens, ({ one }) => ({
 export type Produto = typeof produtos.$inferSelect;
 export type Venda = typeof vendas.$inferSelect;
 export type VendaItem = typeof vendasItens.$inferSelect;
+
+// ─── Produções (Português) ───────────────────────────────────────────
+
+export const producoes = sqliteTable("producoes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  receitaId: integer("receita_id").notNull().references(() => receitas.id, { onDelete: "restrict" }),
+  data: text("data").notNull(),
+  rendimentoReal: real("rendimento_real").notNull(),
+  custoTotalReal: real("custo_total_real").notNull(),
+  observacoes: text("observacoes"),
+});
+
+export const producoesInsumos = sqliteTable("producoes_insumos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  producaoId: integer("producao_id").notNull().references(() => producoes.id, { onDelete: "cascade" }),
+  insumoId: integer("insumo_id").notNull().references(() => insumos.id, { onDelete: "restrict" }),
+  quantidadeUtilizada: real("quantidade_utilizada").notNull(),
+  custoCalculado: real("custo_calculado").notNull(),
+});
+
+export const producoesRelations = relations(producoes, ({ one, many }) => ({
+  receita: one(receitas, {
+    fields: [producoes.receitaId],
+    references: [receitas.id],
+  }),
+  insumos: many(producoesInsumos),
+}));
+
+export const producoesInsumosRelations = relations(producoesInsumos, ({ one }) => ({
+  producao: one(producoes, {
+    fields: [producoesInsumos.producaoId],
+    references: [producoes.id],
+  }),
+  insumo: one(insumos, {
+    fields: [producoesInsumos.insumoId],
+    references: [insumos.id],
+  }),
+}));
+
+export type Producao = typeof producoes.$inferSelect;
+export type ProducaoInsumo = typeof producoesInsumos.$inferSelect;
