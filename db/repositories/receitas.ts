@@ -1,6 +1,6 @@
 import { db } from "../client";
-import { receitas, receitasInsumos, insumos } from "../schema";
-import { eq } from "drizzle-orm";
+import { receitas, receitasInsumos, insumos, comprasItens } from "../schema";
+import { eq, desc } from "drizzle-orm";
 import type { Receita } from "../schema";
 
 export const ReceitasRepository = {
@@ -68,5 +68,18 @@ export const ReceitasRepository = {
   // Listar receitas básicas
   async listarReceitas(): Promise<Receita[]> {
     return await db.select().from(receitas);
+  },
+
+  // Obter o último preço unitário de um insumo baseado nas compras recentes
+  async obterUltimoPrecoInsumo(insumoId: number): Promise<number | null> {
+    const ultimoRegistro = await db
+      .select({ precoUnitario: comprasItens.precoUnitario })
+      .from(comprasItens)
+      .where(eq(comprasItens.insumoId, insumoId))
+      .orderBy(desc(comprasItens.id))
+      .limit(1)
+      .get();
+      
+    return ultimoRegistro ? ultimoRegistro.precoUnitario : null;
   },
 };
